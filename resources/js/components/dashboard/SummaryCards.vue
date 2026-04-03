@@ -6,7 +6,6 @@ import {
     TrendingDown,
     PiggyBank,
     Scale,
-    ArrowRightLeft,
 } from 'lucide-vue-next';
 
 const props = defineProps<{
