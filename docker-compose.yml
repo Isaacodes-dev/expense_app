@@ -34,6 +34,7 @@ services:
       db:
         condition: service_healthy  # Wait for PostgreSQL to accept connections
     volumes:
+      - ./.env:/var/www/html/.env:ro         # Mount .env file into the container
       - app-storage:/var/www/html/storage    # Persist logs, cache, sessions
       - app-public:/var/www/html/public      # Static files for your server's Nginx
     networks:
