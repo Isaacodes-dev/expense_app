@@ -105,8 +105,10 @@ COPY . .
 # Re-generate the optimized autoloader with the full codebase.
 RUN composer dump-autoload --optimize
 
-# Pull the compiled Vite assets from stage 1.
-COPY --from=node-builder /build/public/build/ public/build/
+# Store Vite assets in a separate location (bind mount overwrites public/ at runtime).
+# The entrypoint copies these into public/build/ on startup.
+COPY --from=node-builder /build/public/build/ /var/www/vite-build/
+RUN chown -R www-data:www-data /var/www/vite-build
 
 # Ensure Laravel's writable directories exist with correct ownership.
 RUN mkdir -p \
