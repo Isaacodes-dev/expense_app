@@ -13,7 +13,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Copy only what Vite needs to build — not the full repo.
-COPY vite.config.ts tsconfig.json tsconfig.app.json ./
+COPY vite.config.ts tsconfig.json ./
 COPY resources/ resources/
 
 # Vite inlines these at compile time. Override with:
