@@ -19,10 +19,6 @@ return new class extends Migration
         Schema::table('budgets', function (Blueprint $table) {
             $table->index(['user_id', 'month', 'year']);
         });
-
-        Schema::table('incomes', function (Blueprint $table) {
-            $table->index(['user_id', 'date']);
-        });
     }
 
     public function down(): void
@@ -37,10 +33,6 @@ return new class extends Migration
 
         Schema::table('budgets', function (Blueprint $table) {
             $table->dropIndex(['user_id', 'month', 'year']);
-        });
-
-        Schema::table('incomes', function (Blueprint $table) {
-            $table->dropIndex(['user_id', 'date']);
         });
     }
 };
