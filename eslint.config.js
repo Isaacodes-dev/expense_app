@@ -39,7 +39,7 @@ export default defineConfigWithVueTs(
         },
         rules: {
             'vue/multi-word-component-names': 'off',
-            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-explicit-any': 'warn',
             '@typescript-eslint/consistent-type-imports': [
                 'error',
                 {
@@ -82,10 +82,7 @@ export default defineConfigWithVueTs(
             'bootstrap/ssr',
             'tailwind.config.js',
             'vite.config.ts',
-            'resources/js/actions/**',
             'resources/js/components/ui/*',
-            'resources/js/routes/**',
-            'resources/js/wayfinder/**',
         ],
     },
     prettier, // Turn off all rules that might conflict with Prettier

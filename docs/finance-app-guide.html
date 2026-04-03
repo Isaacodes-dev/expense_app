@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Finance App — Architecture &amp; Docker Guide</title>
+<style>
+  @page { margin: 60px 50px; size: A4; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #1a1a1a; line-height: 1.65; font-size: 11pt; }
+
+  /* Cover */
+  .cover { page-break-after: always; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 90vh; text-align: center; }
+  .cover h1 { font-size: 32pt; font-weight: 700; color: #111827; letter-spacing: -0.5px; }
+  .cover .subtitle { font-size: 14pt; color: #6b7280; margin-top: 12px; }
+  .cover .meta { margin-top: 40px; font-size: 10pt; color: #9ca3af; }
+
+  /* TOC */
+  .toc { page-break-after: always; }
+  .toc h2 { font-size: 18pt; margin-bottom: 20px; color: #111827; }
+  .toc ul { list-style: none; }
+  .toc li { padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 11pt; }
+  .toc li a { color: #111827; text-decoration: none; }
+  .toc .toc-section { font-weight: 600; }
+
+  /* Sections */
+  h2 { font-size: 18pt; color: #111827; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #e5e7eb; page-break-after: avoid; }
+  h3 { font-size: 13pt; color: #374151; margin: 22px 0 8px; page-break-after: avoid; }
+  h4 { font-size: 11pt; color: #4b5563; margin: 16px 0 6px; font-weight: 600; }
+  p { margin: 8px 0; }
+  ul, ol { margin: 8px 0 8px 24px; }
+  li { margin: 4px 0; }
+
+  /* Code */
+  code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 9.5pt; }
+  pre { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 14px 16px; margin: 10px 0; overflow-x: auto; font-size: 9pt; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10pt; }
+  th { background: #f9fafb; text-align: left; font-weight: 600; padding: 8px 10px; border: 1px solid #e5e7eb; }
+  td { padding: 7px 10px; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafafa; }
+
+  /* Callouts */
+  .callout { border-left: 3px solid #3b82f6; background: #eff6ff; padding: 10px 14px; margin: 12px 0; border-radius: 0 6px 6px 0; font-size: 10pt; }
+  .callout-warn { border-left-color: #f59e0b; background: #fffbeb; }
+  .callout strong { display: block; margin-bottom: 3px; }
+
+  /* Diagram */
+  .diagram { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 16px; margin: 12px 0; font-family: 'SF Mono', monospace; font-size: 9.5pt; white-space: pre; line-height: 1.6; }
+
+  /* Page breaks */
+  .page-break { page-break-before: always; }
+
+  /* File tree */
+  .file-tree { font-family: 'SF Mono', monospace; font-size: 9.5pt; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<!-- ===== COVER ===== -->
+<div class="cover">
+  <h1>Finance App</h1>
+  <div class="subtitle">Architecture, Best Practices &amp; Docker Guide</div>
+  <div class="meta">
+    Laravel 13 &bull; Vue 3 &bull; TypeScript &bull; PostgreSQL<br>
+    Generated April 2026
+  </div>
+</div>
+
+<!-- ===== TABLE OF CONTENTS ===== -->
+<div class="toc">
+  <h2>Table of Contents</h2>
+  <ul>
+    <li class="toc-section"><a>1. Project Overview</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;1.1 Tech Stack</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;1.2 Architecture Diagram</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;1.3 Directory Structure</a></li>
+    <li class="toc-section"><a>2. Backend Improvements</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;2.1 BelongsToUser Global Scope</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;2.2 SavingsGoalStatus Enum</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;2.3 Controller Cleanup</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;2.4 Form Request Authorization</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;2.5 Database Indexes</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;2.6 Rate Limiting &amp; Route Security</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;2.7 Exception Handling</a></li>
+    <li class="toc-section"><a>3. Frontend Improvements</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;3.1 HTTP Error Interceptor</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;3.2 Router Guard Race Condition</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;3.3 Route Meta Types</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;3.4 Error Boundary</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;3.5 Typed Error Handling</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;3.6 Component Fixes</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;3.7 Configurable Locale</a></li>
+    <li class="toc-section"><a>4. Docker Setup</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;4.1 Architecture</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;4.2 Dockerfile (Multi-Stage)</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;4.3 Nginx Configuration</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;4.4 Docker Compose (Production)</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;4.5 Docker Compose (Development)</a></li>
+    <li><a>&nbsp;&nbsp;&nbsp;4.6 Deployment Guide</a></li>
+    <li class="toc-section"><a>5. File Reference</a></li>
+  </ul>
+</div>
+
+<!-- ===== 1. PROJECT OVERVIEW ===== -->
+<h2>1. Project Overview</h2>
+
+<p>The Finance App is a personal finance management tool that helps users track income, expenses, budgets, and savings goals. It is built as a <strong>single-page application (SPA)</strong> with a decoupled backend API.</p>
+
+<h3>1.1 Tech Stack</h3>
+<table>
+  <tr><th>Layer</th><th>Technology</th><th>Version</th></tr>
+  <tr><td>Backend Framework</td><td>Laravel</td><td>13.x</td></tr>
+  <tr><td>Language (Backend)</td><td>PHP</td><td>8.3+</td></tr>
+  <tr><td>Frontend Framework</td><td>Vue 3 (Composition API)</td><td>3.5</td></tr>
+  <tr><td>Language (Frontend)</td><td>TypeScript</td><td>5.x</td></tr>
+  <tr><td>State Management</td><td>Pinia</td><td>3.x</td></tr>
+  <tr><td>Routing (Frontend)</td><td>Vue Router</td><td>5.x</td></tr>
+  <tr><td>HTTP Client</td><td>Axios</td><td>1.x</td></tr>
+  <tr><td>CSS</td><td>Tailwind CSS</td><td>4.x</td></tr>
+  <tr><td>Build Tool</td><td>Vite</td><td>8.x</td></tr>
+  <tr><td>Database</td><td>PostgreSQL</td><td>17</td></tr>
+  <tr><td>Authentication</td><td>Laravel Sanctum (SPA mode)</td><td>4.x</td></tr>
+  <tr><td>Session / Cache / Queue</td><td>Database driver</td><td>&mdash;</td></tr>
+</table>
+
+<h3>1.2 Architecture Diagram</h3>
+<div class="diagram">Browser (Vue 3 SPA)
+    |
+    |  HTTP requests (same origin)
+    v
+Nginx (:80 / :443)
+    |
+    |--- /build/*          --> Static files (Vite-built JS/CSS, immutable cache)
+    |--- /api/*            --> FastCGI to PHP-FPM (:9000)
+    |--- /sanctum/*        --> FastCGI to PHP-FPM (:9000)
+    |--- /*                --> try_files, then fallback to index.php (SPA)
+    |
+    v
+PHP-FPM (Laravel 13)
+    |
+    |--- Sanctum Auth (session cookies + CSRF)
+    |--- API Controllers --> Form Requests --> Policies
+    |--- Eloquent Models (global user scoping)
+    |
+    v
+PostgreSQL (:5432)
+    |
+    |--- Application tables (users, categories, incomes, expenses, budgets, savings)
+    |--- Framework tables (sessions, cache, jobs, failed_jobs)</div>
+
+<h3>1.3 Directory Structure</h3>
+<pre><code>app/
+├── Enums/                     # PHP enums (SavingsGoalStatus)
+├── Http/
+│   ├── Controllers/Api/       # 7 API controllers
+│   ├── Requests/              # Form validation + authorization
+│   └── Resources/             # API response formatting
+├── Models/
+│   └── Concerns/              # BelongsToUser trait (global scope)
+├── Policies/                  # Ownership authorization
+└── Services/                  # Business logic (DashboardService)
+
+resources/js/
+├── components/                # Reusable Vue components
+│   ├── common/                # AppHeader, Sidebar, Toast, MonthYearPicker
+│   ├── dashboard/             # SummaryCards, BudgetOverview, etc.
+│   └── forms/                 # CategoryForm, ExpenseForm, BudgetForm, etc.
+├── composables/               # useNotification store
+├── layouts/                   # AppLayout, AuthLayout
+├── pages/                     # Route-level page components
+├── router/                    # Vue Router config + guards
+├── services/                  # Axios HTTP service layer
+├── stores/                    # Pinia state management
+├── types/                     # TypeScript interfaces
+└── utils/                     # Formatters, constants, API error helpers
+
+docker/
+├── nginx.conf                 # Nginx server config
+└── entrypoint.sh              # Container boot script</code></pre>
+
+<!-- ===== 2. BACKEND IMPROVEMENTS ===== -->
+<h2 class="page-break">2. Backend Improvements</h2>
+
+<h3>2.1 BelongsToUser Global Scope</h3>
+
+<p><strong>File:</strong> <code>app/Models/Concerns/BelongsToUser.php</code></p>
+
+<p><strong>Problem:</strong> Every controller query manually filtered with <code>->where('user_id', $request->user()->id)</code>. This is repetitive and, more critically, if a developer forgets the filter in a new query, it creates a data leak where users can see each other's records.</p>
+
+<p><strong>Solution:</strong> A reusable trait that adds a global scope to automatically filter all queries by <code>Auth::id()</code>. It also auto-sets <code>user_id</code> on newly created models.</p>
+
+<pre><code>trait BelongsToUser
+{
+    protected static function bootBelongsToUser(): void
+    {
+        static::addGlobalScope('user', function (Builder $query) {
+            if (Auth::check()) {
+                $query->where($query->getModel()->getTable() . '.user_id', Auth::id());
+            }
+        });
+
+        static::creating(function (Model $model) {
+            if (Auth::check() && ! $model->user_id) {
+                $model->user_id = Auth::id();
+            }
+        });
+    }
+}</code></pre>
+
+<p><strong>Applied to:</strong> Category, Income, Expense, Budget, SavingsGoal</p>
+
+<p><strong>Impact:</strong> Controllers no longer need to manually pass <code>user_id</code> during creation or filter by it during queries. For example, creating an expense simplifies from:</p>
+
+<pre><code>// Before
+$expense = Expense::create([
+    'user_id' => $request->user()->id,
+    ...$request->validated(),
+]);
+
+// After
+$expense = Expense::create($request->validated());</code></pre>
+
+<h3>2.2 SavingsGoalStatus Enum</h3>
+
+<p><strong>File:</strong> <code>app/Enums/SavingsGoalStatus.php</code></p>
+
+<p><strong>Problem:</strong> The <code>status</code> field on SavingsGoal was a bare string with no model-level type safety. Invalid values like <code>"pending"</code> could be written without error.</p>
+
+<p><strong>Solution:</strong> A PHP 8.3 backed enum, cast on the model:</p>
+
+<pre><code>enum SavingsGoalStatus: string
+{
+    case Active = 'active';
+    case Completed = 'completed';
+    case Cancelled = 'cancelled';
+}
+
+// In SavingsGoal model:
+protected $casts = [
+    'status' => SavingsGoalStatus::class,
+];</code></pre>
+
+<p>Now assigning an invalid status throws a <code>ValueError</code> instead of silently corrupting data.</p>
+
+<h3>2.3 Controller Cleanup</h3>
+
+<h4>Removed unnecessary <code>fresh()</code> calls</h4>
+<p><strong>Affected:</strong> BudgetController, ExpenseController, CategoryController, SavingsGoalController, IncomeController, SavingsContributionController</p>
+
+<p>After calling <code>$model->update()</code>, the model instance is already synced. Calling <code>$model->fresh()</code> fires an extra <code>SELECT</code> query for no benefit.</p>
+
+<pre><code>// Before (extra query)
+return new BudgetResource($budget->fresh()->load('category:id,name'));
+
+// After (no extra query)
+$budget->load('category:id,name');
+return new BudgetResource($budget);</code></pre>
+
+<h4>Extracted duplicate expense aggregation</h4>
+<p>Both <code>BudgetController</code> and <code>DashboardService</code> had identical queries to sum expenses by category. Extracted to a shared static method:</p>
+
+<pre><code>// BudgetController
+public static function getActualByCategory(int $month, int $year): Collection
+{
+    return Expense::whereMonth('date', $month)
+        ->whereYear('date', $year)
+        ->selectRaw('category_id, SUM(amount) as total')
+        ->groupBy('category_id')
+        ->pluck('total', 'category_id');
+}
+
+// DashboardService now calls:
+$actualByCategory = BudgetController::getActualByCategory($month, $year);</code></pre>
+
+<h3>2.4 Form Request Authorization</h3>
+
+<p><strong>Problem:</strong> All Form Requests returned <code>authorize() → true</code> while controllers separately called <code>$this->authorize()</code>. This split responsibility and meant validation ran before authorization&mdash;wasting resources on invalid requests.</p>
+
+<p><strong>Solution:</strong> Update requests now handle authorization via policies directly:</p>
+
+<pre><code>// UpdateExpenseRequest
+public function authorize(): bool
+{
+    return $this->user()->can('update', $this->route('expense'));
+}
+
+// Controller no longer needs:
+// $this->authorize('update', $expense);  ← removed</code></pre>
+
+<p><strong>Applied to:</strong> UpdateCategoryRequest, UpdateExpenseRequest, UpdateIncomeRequest, UpdateBudgetRequest, UpdateSavingsGoalRequest</p>
+
+<h3 class="page-break">2.5 Database Indexes</h3>
+
+<p><strong>File:</strong> <code>database/migrations/2024_01_01_000007_add_missing_indexes.php</code></p>
+
+<p>Added composite indexes for queries that filter by multiple columns:</p>
+
+<table>
+  <tr><th>Table</th><th>Index Columns</th><th>Query Pattern</th></tr>
+  <tr><td>savings_goals</td><td>(user_id, status)</td><td>Dashboard: active goals per user</td></tr>
+  <tr><td>savings_contributions</td><td>(savings_goal_id, contribution_date)</td><td>Contributions sorted by date</td></tr>
+  <tr><td>budgets</td><td>(user_id, month, year)</td><td>Budgets filtered by period</td></tr>
+  <tr><td>incomes</td><td>(user_id, date)</td><td>Income list sorted by date</td></tr>
+</table>
+
+<p>The expenses table already had indexes on <code>(user_id, date)</code> and <code>(user_id, category_id, date)</code> from the original migration.</p>
+
+<h3>2.6 Rate Limiting &amp; Route Security</h3>
+
+<p><strong>File:</strong> <code>routes/api.php</code></p>
+
+<ul>
+  <li><strong>Auth endpoints</strong> (login, register): <code>throttle:6,1</code> &mdash; 6 requests per minute. Prevents brute-force attacks.</li>
+  <li><strong>Authenticated routes</strong>: <code>throttle:60,1</code> &mdash; 60 requests per minute per user.</li>
+  <li><strong>Scoped nested resources</strong>: <code>savings-goals.contributions</code> now uses <code>->scoped()</code> which ensures a contribution's parent savings goal matches the route parameter, preventing access to contributions via a different goal's URL.</li>
+</ul>
+
+<h3>2.7 Exception Handling</h3>
+
+<p><strong>File:</strong> <code>bootstrap/app.php</code></p>
+
+<p>Added a custom renderer for <code>NotFoundHttpException</code> on API routes. Previously, a 404 on <code>/api/expenses/999</code> would return an HTML error page. Now it returns proper JSON:</p>
+
+<pre><code>{ "message": "Resource not found." }</code></pre>
+
+<!-- ===== 3. FRONTEND IMPROVEMENTS ===== -->
+<h2 class="page-break">3. Frontend Improvements</h2>
+
+<h3>3.1 HTTP Error Interceptor</h3>
+
+<p><strong>File:</strong> <code>resources/js/services/http.ts</code></p>
+
+<p><strong>Problem:</strong> The Axios instance had no error handling. A 401 response (expired session) would silently fail, leaving the user on a broken page with no feedback.</p>
+
+<p><strong>Solution:</strong> Added a response interceptor and a 30-second request timeout:</p>
+
+<table>
+  <tr><th>Status</th><th>Action</th><th>Reason</th></tr>
+  <tr><td>401 Unauthorized</td><td>Redirect to login page</td><td>Session expired or user logged out elsewhere</td></tr>
+  <tr><td>419 CSRF Mismatch</td><td>Reload the page</td><td>CSRF token expired; reload fetches a fresh token</td></tr>
+  <tr><td>Timeout (30s)</td><td>Reject promise</td><td>Prevents indefinite loading states</td></tr>
+</table>
+
+<h3>3.2 Router Guard Race Condition</h3>
+
+<p><strong>File:</strong> <code>resources/js/router/guards.ts</code></p>
+
+<p><strong>Problem:</strong> If the user navigated rapidly (e.g., clicked a link during initial page load), multiple concurrent <code>fetchUser()</code> calls could fire. This wasted requests and could cause the auth check to evaluate before the first fetch completed.</p>
+
+<p><strong>Solution:</strong> Deduplicates the fetch with a module-level promise reference:</p>
+
+<pre><code>let fetchingUser: Promise&lt;void&gt; | null = null;
+
+router.beforeEach(async (to) => {
+    if (!authStore.checked) {
+        if (!fetchingUser) {
+            fetchingUser = authStore.fetchUser();
+        }
+        await fetchingUser;  // All concurrent navigations wait on the same promise
+    }
+    // ... auth checks
+});</code></pre>
+
+<h3>3.3 Route Meta Types</h3>
+
+<p><strong>File:</strong> <code>resources/js/types/router.d.ts</code></p>
+
+<p>Augments Vue Router's <code>RouteMeta</code> interface so that <code>meta.requiresAuth</code>, <code>meta.guest</code>, and <code>meta.layout</code> are type-checked. A typo like <code>meta.requireAuth</code> is now caught at compile time.</p>
+
+<pre><code>declare module 'vue-router' {
+    interface RouteMeta {
+        layout?: 'auth' | 'app';
+        requiresAuth?: boolean;
+        guest?: boolean;
+    }
+}</code></pre>
+
+<h3>3.4 Error Boundary</h3>
+
+<p><strong>File:</strong> <code>resources/js/App.vue</code></p>
+
+<p><strong>Problem:</strong> If a lazy-loaded page component threw an error during render, the entire app would crash with a white screen and no recovery path.</p>
+
+<p><strong>Solution:</strong> Added <code>onErrorCaptured</code> at the root component. When an unhandled error occurs, a fallback UI is shown with a "Reload page" button instead of a blank screen.</p>
+
+<h3>3.5 Typed Error Handling</h3>
+
+<p><strong>File:</strong> <code>resources/js/utils/api-error.ts</code></p>
+
+<p><strong>Problem:</strong> Catch blocks used <code>err: any</code>, defeating TypeScript. ESLint had <code>no-explicit-any</code> disabled globally.</p>
+
+<p><strong>Solution:</strong> Created typed error utilities and changed the ESLint rule to <code>warn</code>:</p>
+
+<pre><code>// Type-safe error handling
+import { getErrorMessage } from '@/utils/api-error';
+
+try {
+    await store.remove(id);
+} catch (err: unknown) {
+    notify.error('Error', getErrorMessage(err, 'Failed to delete.'));
+}</code></pre>
+
+<p>Also removed the <code>[key: string]: unknown</code> index signature from the <code>User</code> type, which previously allowed any arbitrary property without a type error.</p>
+
+<h3>3.6 Component Fixes</h3>
+
+<table>
+  <tr><th>Component</th><th>Fix</th></tr>
+  <tr><td>ContributionForm</td><td>Form no longer resets optimistically before knowing if the API call succeeded. Exposes <code>resetForm()</code> via <code>defineExpose</code>, called by the parent after a successful response.</td></tr>
+  <tr><td>MonthYearPicker</td><td>Added <code>aria-label="Previous month"</code> and <code>aria-label="Next month"</code> to icon-only navigation buttons for screen reader accessibility.</td></tr>
+  <tr><td>BudgetForm + MonthYearPicker</td><td>Extracted the duplicated months array to a shared constant in <code>utils/constants.ts</code>.</td></tr>
+  <tr><td>Expense types</td><td>Added a <code>PaymentMethod</code> union type (<code>'cash' | 'card' | 'bank_transfer' | 'mobile_money' | 'other'</code>) instead of bare <code>string</code>.</td></tr>
+</table>
+
+<h3>3.7 Configurable Locale</h3>
+
+<p><strong>File:</strong> <code>resources/js/utils/formatters.ts</code></p>
+
+<p>Currency and date formatting previously hardcoded <code>'en-ZM'</code> and <code>'ZMW'</code>. Now reads from environment variables with fallback defaults:</p>
+
+<pre><code>const LOCALE = import.meta.env.VITE_LOCALE ?? 'en-ZM';
+const CURRENCY = import.meta.env.VITE_CURRENCY ?? 'ZMW';</code></pre>
+
+<p>Set in <code>.env</code>: <code>VITE_LOCALE=en-ZM</code> and <code>VITE_CURRENCY=ZMW</code>.</p>
+
+<!-- ===== 4. DOCKER SETUP ===== -->
+<h2 class="page-break">4. Docker Setup</h2>
+
+<h3>4.1 Architecture</h3>
+
+<div class="diagram">                   docker-compose.yml
+                   ====================
+
+    ┌─────────┐     ┌─────────┐     ┌──────────────┐
+    │  nginx  │────▶│   app   │────▶│      db      │
+    │  :80    │     │ PHP-FPM │     │ PostgreSQL   │
+    │         │     │  :9000  │     │   :5432      │
+    └─────────┘     └─────────┘     └──────────────┘
+         │               │
+         │               │          ┌──────────────┐
+         │               └─────────▶│ queue-worker │
+         │                          │ artisan work │
+         ▼                          └──────────────┘
+    app-public (shared volume)
+
+              docker-compose.override.yml (dev only)
+              ========================================
+
+    ┌──────────┐
+    │ node-dev │  Vite HMR server
+    │  :5173   │  (bind-mounted source)
+    └──────────┘</div>
+
+<table>
+  <tr><th>Service</th><th>Image</th><th>Port</th><th>Role</th></tr>
+  <tr><td>app</td><td>Custom (Dockerfile)</td><td>9000 (internal)</td><td>Laravel PHP-FPM, runs migrations on boot</td></tr>
+  <tr><td>nginx</td><td>nginx:1.27-alpine</td><td>80 (prod) / 8080 (dev)</td><td>Reverse proxy, static files, SPA fallback</td></tr>
+  <tr><td>db</td><td>postgres:17-alpine</td><td>internal (prod) / 5432 (dev)</td><td>PostgreSQL with healthcheck</td></tr>
+  <tr><td>queue-worker</td><td>Same as app</td><td>none</td><td>Processes background jobs</td></tr>
+  <tr><td>node-dev</td><td>node:22-alpine</td><td>5173 (dev only)</td><td>Vite HMR for live frontend development</td></tr>
+</table>
+
+<h3>4.2 Dockerfile (Multi-Stage)</h3>
+
+<p>The Dockerfile uses two stages to produce a lean production image:</p>
+
+<h4>Stage 1: node-builder</h4>
+<ul>
+  <li>Base: <code>node:22-alpine</code></li>
+  <li>Copies <code>package.json</code> and <code>package-lock.json</code> first for layer caching&mdash;npm only re-installs when dependencies change.</li>
+  <li>Accepts <code>VITE_APP_NAME</code>, <code>VITE_LOCALE</code>, <code>VITE_CURRENCY</code> as build args (Vite inlines these at compile time).</li>
+  <li>Runs <code>npm run build</code>, outputting hashed assets to <code>public/build/</code>.</li>
+</ul>
+
+<h4>Stage 2: php</h4>
+<ul>
+  <li>Base: <code>php:8.3-fpm-alpine</code></li>
+  <li>Installs PHP extensions: pdo_pgsql, pgsql, bcmath, mbstring, xml, zip, curl, opcache.</li>
+  <li>OPcache tuned for production (<code>validate_timestamps=0</code>).</li>
+  <li>Composer installs with <code>--no-dev --optimize-autoloader</code>.</li>
+  <li>Copies built frontend assets from stage 1.</li>
+  <li>Optional Xdebug via <code>--build-arg INSTALL_XDEBUG=true</code> (excluded by default).</li>
+  <li>Runs as <code>www-data</code> (non-root) for security.</li>
+  <li>Entrypoint caches Laravel config/routes/views and runs migrations.</li>
+</ul>
+
+<div class="callout">
+  <strong>Why not generate APP_KEY in the Dockerfile?</strong>
+  The APP_KEY encrypts sessions, cookies, and other sensitive data. Generating it on every container start would invalidate all existing sessions. It must be set once via <code>.env</code> and reused across deployments.
+</div>
+
+<h3>4.3 Nginx Configuration</h3>
+
+<p><strong>File:</strong> <code>docker/nginx.conf</code></p>
+
+<p>Key routing rules:</p>
+
+<table>
+  <tr><th>Path</th><th>Handler</th><th>Cache</th></tr>
+  <tr><td><code>/build/*</code></td><td>Static files (Vite)</td><td><code>Cache-Control: public, immutable</code> (content-hashed filenames)</td></tr>
+  <tr><td><code>/api/*</code></td><td>FastCGI → PHP-FPM</td><td>None</td></tr>
+  <tr><td><code>/sanctum/csrf-cookie</code></td><td>FastCGI → PHP-FPM</td><td>None (sets XSRF-TOKEN cookie)</td></tr>
+  <tr><td><code>/up</code></td><td>FastCGI → PHP-FPM</td><td>None (health check)</td></tr>
+  <tr><td><code>/*</code></td><td><code>try_files → /index.php</code></td><td>None (SPA fallback for Vue Router)</td></tr>
+</table>
+
+<p>Security headers applied globally: <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>, <code>Referrer-Policy</code>. Dotfiles are denied. Gzip is enabled for text-based assets.</p>
+
+<div class="callout">
+  <strong>No CORS headers needed.</strong> Since the Vue SPA and the API are served from the same Nginx on the same domain, all requests are same-origin. Sanctum uses first-party session cookies; no <code>Access-Control-*</code> headers are required.
+</div>
+
+<h3 class="page-break">4.4 Docker Compose (Production)</h3>
+
+<p><strong>File:</strong> <code>docker-compose.yml</code></p>
+
+<p>Key design decisions:</p>
+
+<ul>
+  <li><strong>Shared <code>app-public</code> volume</strong> &mdash; Nginx reads static files (<code>public/build/</code>, favicon, etc.) directly from this volume instead of proxying them through PHP-FPM. The <code>:ro</code> flag ensures Nginx cannot modify files.</li>
+  <li><strong>Database healthcheck</strong> &mdash; The <code>app</code> service uses <code>depends_on: db: condition: service_healthy</code>. This ensures migrations in the entrypoint don't fail because PostgreSQL isn't ready yet.</li>
+  <li><strong>Fail-fast on missing password</strong> &mdash; <code>${DB_PASSWORD:?DB_PASSWORD must be set}</code> makes Docker Compose refuse to start if the password is not configured, preventing accidental deployment with an empty database password.</li>
+  <li><strong>Queue worker</strong> &mdash; Uses the same Docker image but overrides CMD. The entrypoint detects that the command is not <code>php-fpm</code> and skips caching/migrations.</li>
+</ul>
+
+<h3>4.5 Docker Compose (Development)</h3>
+
+<p><strong>File:</strong> <code>docker-compose.override.yml</code></p>
+
+<p>Automatically merged when running <code>docker compose up</code> (without <code>-f</code>).</p>
+
+<ul>
+  <li><strong>Bind mount</strong> &mdash; <code>.:/var/www/html</code> maps host code into the container for live editing. An anonymous volume (<code>/var/www/html/vendor</code>) preserves the container's Linux-native vendor directory.</li>
+  <li><strong>Entrypoint override</strong> &mdash; Skips config/route caching so <code>.env</code> changes take effect immediately.</li>
+  <li><strong>Vite HMR</strong> &mdash; A <code>node-dev</code> service runs the Vite dev server on port 5173. The <code>@vite</code> Blade directive auto-detects this via the <code>public/hot</code> file.</li>
+  <li><strong>Exposed DB port</strong> &mdash; PostgreSQL is accessible at <code>localhost:5432</code> for GUI tools.</li>
+</ul>
+
+<h3>4.6 Deployment Guide</h3>
+
+<h4>First-Time Setup</h4>
+<pre><code># 1. Copy and configure environment
+cp .env.example .env
+# Edit .env: set DB_HOST=db, DB_PASSWORD=&lt;strong-password&gt;
+
+# 2. Build and start (production)
+docker compose -f docker-compose.yml build
+docker compose -f docker-compose.yml up -d
+
+# 3. Generate application key
+docker compose exec app php artisan key:generate --show
+# Add output to .env as APP_KEY=base64:...
+docker compose restart app</code></pre>
+
+<h4>Development</h4>
+<pre><code># Start all services (auto-merges override)
+docker compose up -d
+
+# App:      http://localhost:8080
+# Vite HMR: http://localhost:5173
+# Database: localhost:5432</code></pre>
+
+<h4>Production Deployment</h4>
+<pre><code># Build with custom env vars
+docker compose -f docker-compose.yml build \
+  --build-arg VITE_APP_NAME="My Finance App"
+
+# Start (skips dev override)
+docker compose -f docker-compose.yml up -d
+
+# View logs
+docker compose logs -f app
+docker compose logs -f queue-worker</code></pre>
+
+<h4>Common Operations</h4>
+<pre><code># Run migrations manually
+docker compose exec app php artisan migrate
+
+# Clear all caches
+docker compose exec app php artisan optimize:clear
+
+# Access PostgreSQL shell
+docker compose exec db psql -U postgres -d finance_app
+
+# Restart queue worker (after code changes)
+docker compose restart queue-worker</code></pre>
+
+<!-- ===== 5. FILE REFERENCE ===== -->
+<h2 class="page-break">5. File Reference</h2>
+
+<h3>New Files Created</h3>
+<table>
+  <tr><th>File</th><th>Purpose</th></tr>
+  <tr><td><code>app/Enums/SavingsGoalStatus.php</code></td><td>PHP enum for savings goal status values</td></tr>
+  <tr><td><code>app/Models/Concerns/BelongsToUser.php</code></td><td>Global scope trait for user-owned models</td></tr>
+  <tr><td><code>database/migrations/..._add_missing_indexes.php</code></td><td>Composite indexes for performance</td></tr>
+  <tr><td><code>resources/js/types/router.d.ts</code></td><td>Vue Router meta type augmentation</td></tr>
+  <tr><td><code>resources/js/utils/api-error.ts</code></td><td>Typed Axios error handling utilities</td></tr>
+  <tr><td><code>resources/js/utils/constants.ts</code></td><td>Shared constants (months array)</td></tr>
+  <tr><td><code>Dockerfile</code></td><td>Multi-stage Docker image (Node + PHP-FPM)</td></tr>
+  <tr><td><code>docker-compose.yml</code></td><td>Production orchestration</td></tr>
+  <tr><td><code>docker-compose.override.yml</code></td><td>Development overrides</td></tr>
+  <tr><td><code>.dockerignore</code></td><td>Excludes unnecessary files from build context</td></tr>
+  <tr><td><code>docker/nginx.conf</code></td><td>Nginx SPA + API routing config</td></tr>
+  <tr><td><code>docker/entrypoint.sh</code></td><td>Container boot: caching + migrations</td></tr>
+</table>
+
+<h3>Modified Files</h3>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>app/Models/Category.php</code></td><td>Added BelongsToUser trait</td></tr>
+  <tr><td><code>app/Models/Expense.php</code></td><td>Added BelongsToUser trait</td></tr>
+  <tr><td><code>app/Models/Income.php</code></td><td>Added BelongsToUser trait</td></tr>
+  <tr><td><code>app/Models/Budget.php</code></td><td>Added BelongsToUser trait</td></tr>
+  <tr><td><code>app/Models/SavingsGoal.php</code></td><td>Added BelongsToUser trait + SavingsGoalStatus cast</td></tr>
+  <tr><td><code>app/Http/Controllers/Api/*</code></td><td>Removed fresh(), removed manual user_id filtering, extracted shared query</td></tr>
+  <tr><td><code>app/Services/DashboardService.php</code></td><td>Removed userId parameter, uses global scope + shared query</td></tr>
+  <tr><td><code>app/Http/Requests/*/Update*.php</code></td><td>Added policy-based authorization</td></tr>
+  <tr><td><code>app/Policies/BudgetPolicy.php</code></td><td>Reformatted to multi-line PSR-12</td></tr>
+  <tr><td><code>app/Policies/SavingsGoalPolicy.php</code></td><td>Reformatted to multi-line PSR-12</td></tr>
+  <tr><td><code>routes/api.php</code></td><td>Added rate limiting + scoped nested resource</td></tr>
+  <tr><td><code>bootstrap/app.php</code></td><td>Added JSON 404 handler for API routes</td></tr>
+  <tr><td><code>resources/js/services/http.ts</code></td><td>Added error interceptor + timeout</td></tr>
+  <tr><td><code>resources/js/router/guards.ts</code></td><td>Fixed race condition with shared promise</td></tr>
+  <tr><td><code>resources/js/App.vue</code></td><td>Added error boundary with fallback UI</td></tr>
+  <tr><td><code>resources/js/types/auth.ts</code></td><td>Removed unsafe index signature</td></tr>
+  <tr><td><code>resources/js/types/expense.ts</code></td><td>Added PaymentMethod union type</td></tr>
+  <tr><td><code>resources/js/types/global.d.ts</code></td><td>Added VITE_LOCALE, VITE_CURRENCY; removed catch-all</td></tr>
+  <tr><td><code>resources/js/utils/formatters.ts</code></td><td>Reads locale from env vars</td></tr>
+  <tr><td><code>resources/js/components/common/MonthYearPicker.vue</code></td><td>Added aria-labels, shared MONTHS constant</td></tr>
+  <tr><td><code>resources/js/components/forms/BudgetForm.vue</code></td><td>Uses shared MONTHS constant</td></tr>
+  <tr><td><code>resources/js/components/forms/ContributionForm.vue</code></td><td>Deferred form reset via defineExpose</td></tr>
+  <tr><td><code>resources/js/pages/savings/SavingsGoalDetailPage.vue</code></td><td>Calls resetForm() after successful submission</td></tr>
+  <tr><td><code>resources/js/pages/expenses/ExpenseListPage.vue</code></td><td>Uses typed error handler</td></tr>
+  <tr><td><code>resources/js/pages/categories/CategoryListPage.vue</code></td><td>Uses typed error handler</td></tr>
+  <tr><td><code>eslint.config.js</code></td><td>Changed no-explicit-any from off to warn</td></tr>
+  <tr><td><code>.env.example</code></td><td>Added VITE_LOCALE, VITE_CURRENCY</td></tr>
+</table>
+
+</body>
+</html>

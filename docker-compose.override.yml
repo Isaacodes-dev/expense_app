@@ -1,0 +1,44 @@
+# =============================================================================
+# Development Overrides
+#
+# Automatically merged when running: docker compose up -d
+# To skip (production only): docker compose -f docker-compose.yml up -d
+# =============================================================================
+
+services:
+  # Bind-mount source code for live editing. The anonymous volume for vendor/
+  # prevents host vendor/ (macOS binaries) from overwriting Linux-native deps.
+  # Entrypoint is overridden to skip config/route caching (breaks during dev).
+  app:
+    build:
+      target: php
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+    volumes:
+      - .:/var/www/html              # Live code changes
+      - /var/www/html/vendor         # Preserve container's vendor/
+    entrypoint: ["php-fpm"]          # Skip caching entrypoint in dev
+
+  # Vite dev server with Hot Module Replacement.
+  # Access at http://localhost:5173 — the @vite Blade directive
+  # auto-detects the HMR server via the public/hot file.
+  node-dev:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "5173:5173"
+    command: npm run dev -- --host 0.0.0.0
+    environment:
+      VITE_APP_NAME: "Finance App"
+      VITE_LOCALE: en-ZM
+      VITE_CURRENCY: ZMW
+
+  # Expose DB to host for tools like pgAdmin or TablePlus.
+  db:
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: secret

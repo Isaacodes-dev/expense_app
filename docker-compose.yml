@@ -1,0 +1,89 @@
+# =============================================================================
+# Production Docker Compose
+#
+# Usage:
+#   docker compose -f docker-compose.yml build
+#   docker compose -f docker-compose.yml up -d
+#
+# First-time setup:
+#   1. Copy .env.example to .env and set DB_HOST=db, DB_PASSWORD, APP_KEY
+#   2. Generate a key: docker compose exec app php artisan key:generate --show
+#   3. Migrations run automatically via the entrypoint
+#   4. Point your server's Nginx to fastcgi_pass app:9000 (or localhost:9000)
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # app: Laravel PHP-FPM
+  # Your server's Nginx proxies PHP requests here on port 9000.
+  # The entrypoint caches config/routes/views and runs migrations on boot.
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_APP_NAME: "Finance App"
+        VITE_LOCALE: en-ZM
+        VITE_CURRENCY: ZMW
+    restart: unless-stopped
+    ports:
+      - "9000:9000"  # Expose PHP-FPM to the host so your server's Nginx can reach it
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy  # Wait for PostgreSQL to accept connections
+    volumes:
+      - app-storage:/var/www/html/storage    # Persist logs, cache, sessions
+      - app-public:/var/www/html/public      # Static files for your server's Nginx
+    networks:
+      - finance-net
+
+  # ---------------------------------------------------------------------------
+  # db: PostgreSQL database
+  # Healthcheck ensures the app container waits until DB is ready.
+  # Data is persisted in a named volume.
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-finance_app}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set}  # Fails fast if unset
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-finance_app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - finance-net
+
+  # ---------------------------------------------------------------------------
+  # queue-worker: Processes background jobs
+  # Uses the same image as app but overrides CMD to run the queue worker.
+  # The entrypoint skips caching/migrations since CMD is not "php-fpm".
+  # ---------------------------------------------------------------------------
+  queue-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - finance-net
+
+volumes:
+  pgdata:        # PostgreSQL data
+  app-storage:   # Laravel storage (logs, framework cache)
+  app-public:    # Static files (point your Nginx root here or use a bind mount)
+
+networks:
+  finance-net:
+    driver: bridge
