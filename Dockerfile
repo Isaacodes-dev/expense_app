@@ -30,7 +30,7 @@ RUN npm run build
 # Serves the Laravel API. Nginx sits in front and forwards
 # PHP requests here via FastCGI on port 9000.
 # ============================================================
-FROM php:8.3-fpm-alpine AS php
+FROM php:8.4-fpm-alpine AS php
 
 # Install system libraries required by PHP extensions,
 # then install the extensions themselves.
