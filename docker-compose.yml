@@ -36,7 +36,7 @@ services:
     volumes:
       - ./.env:/var/www/html/.env:ro         # Mount .env file into the container
       - app-storage:/var/www/html/storage    # Persist logs, cache, sessions
-      - app-public:/var/www/html/public      # Static files for your server's Nginx
+      - ./public:/var/www/html/public          # Bind mount so host Nginx can serve static files
     networks:
       - finance-net
 
@@ -83,7 +83,6 @@ services:
 volumes:
   pgdata:        # PostgreSQL data
   app-storage:   # Laravel storage (logs, framework cache)
-  app-public:    # Static files (point your Nginx root here or use a bind mount)
 
 networks:
   finance-net:
