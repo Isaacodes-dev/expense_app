@@ -33,7 +33,7 @@ RUN npm run build
 FROM php:8.4-fpm-alpine AS php
 
 # Install system libraries required by PHP extensions,
-# then install the extensions themselves.
+
 RUN apk add --no-cache \
         postgresql-dev \
         libzip-dev \
